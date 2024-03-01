@@ -13,8 +13,10 @@ export const getRandomData=(data:any[])=>{
    try {
     for(let i=0;i<=randomNo;i++){
       let randomNo:number= Math.floor(Math.random() * 10) + 1
-        if(randomNo<=data?.length){
+      let allNo:any={}
+        if(randomNo<=data?.length && !allNo[randomNo]){
           randomData.push(data[randomNo])
+          allNo[randomNo]=randomNo
         }else{
           getRandomData(data)
         }

@@ -1,11 +1,12 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, FlatList, ScrollView, SafeAreaView, Platform } from 'react-native'
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, FlatList, ScrollView, SafeAreaView, Platform, Alert, ActionSheetIOS, ActivityIndicator } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import fetchData from '../api/apiAction'
 import { BASE_URL } from '../api/apiUrls'
 import { useDispatch, useSelector } from 'react-redux'
-import { STORE_PRODUCTS } from '../redux/actions'
+import {STORE_PRODUCTS_FAILURE, STORE_PRODUCTS_REQUEST, STORE_PRODUCTS_SUCCESS } from '../redux/actions'
 import FontAwesome5Icon from 'react-native-vector-icons/FontAwesome5'
 import { capitalizeFirstWord, getRandomData } from '../common/commonFunctions'
+
 const Home = ({ navigation }: any) => {
   const dispatch = useDispatch()
   const state = useSelector(state => state)
@@ -16,25 +17,30 @@ const Home = ({ navigation }: any) => {
 
   const fetchProduct = async () => {
     setIsLoading(true)
+    dispatch({ type: STORE_PRODUCTS_REQUEST})
     fetchData(BASE_URL)
       .then(res => {
-        console.log("line 17", res)
+       
         if (res?.products?.length > 0) {
           setIsLoading(false)
-          dispatch({ type: STORE_PRODUCTS, payload: res })
+          dispatch({ type: STORE_PRODUCTS_SUCCESS, payload: res })
         }
       })
       .catch(Error => {
         setIsLoading(false)
+        dispatch({ type: STORE_PRODUCTS_FAILURE})
+        Alert.alert("Something went wrong",Error)
         console.log("Error", Error)
       })
 
   }
 
+  useEffect(()=>{
+    fetchProduct()
+  },[])
+
   useEffect(() => {
-    if (!state?.products?.length) {
-      fetchProduct()
-    } else {
+   
       const products = state?.products
       if (products?.length > 0) {
         let categories = products?.map(prod => prod?.category)
@@ -47,47 +53,47 @@ const Home = ({ navigation }: any) => {
 
 
       }
-    }
+    
 
   }, [state?.products?.length])
 
-  const renderItem=({item}:any)=>{
-    
-    return(
+  const renderItem = ({ item }: any) => {
+
+    return (
+    <View style={styles.products}>
+      <View style={{ width: '50%',}}>
+        <Text style={styles.trendTitle}>{item?.name}</Text>
       
-            <View 
-            style={styles.products}>
+        {item?.price?
+        <Text 
+        style={{ color: 'black',fontWeight:500,fontSize:18,paddingBottom:10,}}>
+          ₹{item?.price}</Text>
+          :null
+          }
+        
+          <Text  numberOfLines={2}>{item?.details}</Text>
+          
+       
+     
+      </View>
+
+      <View style={{ width: '50%' }}>
+          <Image
+              source={item?.image ?{ uri: item?.image }:require('../images/demo.png')}
+              style={{ width: '100%', height: 150 }}
+              resizeMode={'contain'}
+            /> 
             
-                
-               <View style={{width:'50%',justifyContent:'center',alignItems:'center'}}>
-               <Text style={{fontSize:15,fontWeight:'bold',textAlign:'center'}}>{item?.name}</Text>
-               <View style={{padding:5,alignItems:'center'}}>
-               <Text style={{textAlign:'center'}}>{item?.details}</Text>
-                <Text style={{color:'grey'}}>Price: ₹{item?.price}</Text>
-               </View>
-               </View>
 
-               <View style={{width:'50%'}}>
-              {
-              item?.image?
-              <Image
-                source={{uri:item?.image}}
-                style={{width:'100%',height:150}}
-                resizeMode={'contain'}
-                />:
-                <Image
-                source={require('../images/demo.png')}
-                style={{width:'100%',height:150}}
-                resizeMode={'contain'}
-                />
+        
+      </View>
 
-            }
-            </View>
-
-            </View>
+    </View>
 
     )
-}
+  }
+
+
 
   const getImages = (category: string) => {
     switch (category) {
@@ -171,13 +177,13 @@ const Home = ({ navigation }: any) => {
           </View>
           <TextInput
             style={styles.searchBar}
-            placeholder={"What are you looking for?"}
-            placeholderTextColor={'black'}
+            placeholder={"What're you looking for?"}
+            placeholderTextColor={'grey'}
           />
         </View>
 
      <ScrollView>
-     <View style={styles?.subContainer}>
+     <View>
           <View style={styles.header}>
             <Text>
               Shop for
@@ -189,10 +195,14 @@ const Home = ({ navigation }: any) => {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.categories}>
+          {isLoading?
+          <ActivityIndicator size="small" color="orange" />
+          :categories?.length>0?
+            <View style={styles.categories}>
             {
               categories?.map(category =>
                 <TouchableOpacity
+                  key={category?.id}
                   onPress={() => handlePress(category)}
                   activeOpacity={0.8} style={styles.category}>
                   <View>
@@ -202,7 +212,10 @@ const Home = ({ navigation }: any) => {
                 </TouchableOpacity>
               )
             }
-          </View>
+          </View>:null
+          }
+          {trendingData?.length>0 && !isLoading?
+            <View>
             <View style={styles.header}>
               <Text style={{fontWeight:400}}>Trending</Text>
               <TouchableOpacity
@@ -211,10 +224,11 @@ const Home = ({ navigation }: any) => {
                 <Text style={{color:'orange'}}>Show all</Text>
               </TouchableOpacity>
             </View>
-            <FlatList
+            
+            
+              <FlatList
             data={trendingData}
             extraData={state}
-           
             renderItem={renderItem}
             horizontal
             keyExtractor={item => item.id}
@@ -222,6 +236,9 @@ const Home = ({ navigation }: any) => {
 
             
             />
+            </View>
+            :null
+          }
           
         </View>
      </ScrollView>
@@ -235,6 +252,7 @@ const Home = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    backgroundColor:'whitesmoke'
 
   },
   container: {
@@ -245,10 +263,11 @@ const styles = StyleSheet.create({
     flex: 1,
 
   },
+
   searchBarContainer: {
     width: '90%',
     flexDirection: 'row',
-    padding:Platform.OS=='ios' ?20:0,
+    padding:Platform.OS=='ios' ?17:0,
     backgroundColor: 'white',
     alignSelf: 'center',
     bottom: 30,
@@ -289,16 +308,24 @@ const styles = StyleSheet.create({
     flexDirection:'row',
     backgroundColor:'white',
     flex:1,
+    width:'30%',
     borderRadius:10,
     shadowColor:'grey',
     shadowOpacity:0.5,
     margin:10,
-    justifyContent:'center',
-    alignItems:'center',
+    padding:5,
     elevation:10,
    
 
-    }
+    },
+   trendTitle: { 
+    fontSize: 20, 
+    fontWeight: 'bold',
+    color:'black'
+    ,
+    paddingBottom:10,
+
+  }
 
 })
 

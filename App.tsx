@@ -3,7 +3,6 @@ import React from 'react';
 
 import {
   StyleSheet,
-
   View,
 } from 'react-native';
 
@@ -11,22 +10,22 @@ import MainStack from './src/navigation/MainStack';
 
 
 
-function App(): React.JSX.Element {
+const App = () => {
 
 
   return (
     <View style={styles.root}>
-     
-       <MainStack/>
-     
+
+      <MainStack />
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root:{
-    flex:1,
-    
+  root: {
+    flex: 1,
+
   },
   sectionContainer: {
     marginTop: 32,
